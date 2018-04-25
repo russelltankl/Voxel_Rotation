@@ -14,39 +14,6 @@
 #define PI 3.14159265
 using namespace std;
 
-#define cudaCheckError() {																\
-	cudaError_t e = cudaGetLastError();													\
-if (e != cudaSuccess) {
-\
-	printf("Cuda failure %s:%d: '%s'\n", __FILE__, __LINE__, cudaGetErrorString(e));	\
-}																					\
-}
-
-//GPU
-//__constant__ float4 TransformationMatrix;
-//
-//float4 test = make_float4(56, 3, 3, 23);
-//
-//test[0];
-
-
-__global__ void gpuRotation(Float4 *CoordMatrix, Float4 *OutputMatrix)
-{
-	int i = blockIdx.x*blockDim.x + threadIdx.x;
-	int j = blockIdx.y*blockDim.y + threadIdx.y;
-
-	if (i < 4 && j < 4)
-	{
-		int Level_3 = j;
-		int Level_2 = i;
-
-		//OutputMatrix[Level_2].value[Level_3] = (TransformationMatrix[0].value[Level_3] * CoordMatrix[Level_2].value[0] +
-		//	TransformationMatrix[1].value[Level_3] * CoordMatrix[Level_2].value[1] +
-		//	TransformationMatrix[2].value[Level_3] * CoordMatrix[Level_2].value[2] +
-		//	TransformationMatrix[3].value[Level_3] * CoordMatrix[Level_2].value[3]);
-	}
-}
-
 // Multiply a 3 x 3 Matrix size
 void multiply3x3(Float3 *firstMat, Float3 *secondMat, Float3 *outputMat)
 {
@@ -171,9 +138,6 @@ Float4 *gen4x4tm(float xCoor, float yCoor, float zCoor, char axis, float theta)
 	b[0].value[0] = 1;
 	b[1].value[1] = 1;
 	b[2].value[2] = 1;
-	//b[3].value[0] = -xCoor;
-	//b[3].value[1] = -yCoor;
-	//b[3].value[2] = -zCoor;
 	b[3].value[3] = 1;
 
 	c[3].value[3] = 1;
@@ -303,33 +267,6 @@ Float4 *gen4x4tm(float xCoor, float yCoor, float zCoor, char axis, float theta)
 			}
 		}
 	}
-
-
-	/*if (axis == 'x')
-	{
-	c[0].value[0] = 1;
-	c[1].value[1] = floor(cos(theta*PI / 180));
-	c[1].value[2] = floor(sin(theta*PI / 180));
-	c[2].value[1] = floor(-sin(theta*PI / 180));
-	c[2].value[2] = floor(cos(theta*PI / 180));
-
-	}
-	else if (axis == 'y')
-	{
-	c[1].value[1] = 1;
-	c[0].value[0] = floor(cos(theta*PI / 180));
-	c[0].value[2] = floor(-sin(theta*PI / 180));
-	c[2].value[0] = floor(sin(theta*PI / 180));
-	c[2].value[2] = floor(cos(theta*PI / 180));
-	}
-	else if (axis == 'z')
-	{
-	c[2].value[2] = 1;
-	c[0].value[0] = floor(cos(theta*PI / 180));
-	c[0].value[1] = floor(sin(theta*PI / 180));
-	c[1].value[0] = floor(-sin(theta*PI / 180));
-	c[1].value[1] = floor(cos(theta*PI / 180));
-	}*/
 
 	cout << "Translation Matrix X Rotation Matrix: ";
 	cout << endl;
@@ -527,42 +464,7 @@ void Artificial::rotate(int xDist, int yDist, int zDist, char rotateAxis, int th
 	Float4 *FinalT = new Float4[4]; // Final transformed matrix stored here
 	TransformedVox = new float[vSize]; // Final voxel value stored here
 	Float4 *TMat = gen4x4tm(xDist, yDist, zDist, rotateAxis, thetas); // Obtain transformation matrix
-	//int GPU = 0;
-	//if (GPU = 1)
-	//{
-	//	// Create pointers for in out matrix
-	//	Float4 *CUDAin;
-	//	Float4 *CUDAout;
-
-	//	// Allocate CUDA memory for in out matrix
-	//	cudaMalloc(&CUDAin, sizeof(float)* vSize);
-	//	cudaMalloc(&CUDAout, sizeof(float)* vSize);
-	//	cudaCheckError();
-
-	//	// Copy coordinate matrix into CUDA memory
-	//	cudaMemcpy(CUDAin, place, sizeof(float)* vSize, cudaMemcpyHostToDevice);
-	//	cudaCheckError();
-
-	//	// Copy transformation matrix into constant memory
-	//	//cudaMemcpyToSymbol(TransformationMatrix, TMat, sizeof(float)* 16);
-	//	//cudaCheckError();
-
-	//	// Invoke kernel
-	//	gpuRotation <<< 1, 9 >>>(CUDAin, CUDAout);
-	//	cudaCheckError();
-
-	//	// Copy results back to host memory
-	//	cudaMemcpy(&FinalT, CUDAout, sizeof(float)* vSize, cudaMemcpyDeviceToHost);
-	//	cudaCheckError();
-
-	//	// Free device memory
-	//	cudaFree(CUDAin);
-	//	cudaFree(CUDAout);
-	//}
-	//else
-	//{
 	multiplynxm(TMat, place, FinalT, 4, vSize); // matrix multiply to get Transformed
-	//}
 	for (int fin = 0; fin < vSize; fin++) // rotate voxels
 	{
 		int yes = (FinalT[fin].value[2] * Zs * Zs) + (FinalT[fin].value[1] * Ys) + FinalT[fin].value[0];
@@ -595,8 +497,7 @@ void Artificial::save()
 		//	phiOut[k] = outputPhi(phiValGPU[k] * 255);
 		//else
 		//phiOut[k] = char(TransformedVox[k] * 255);
-		//phiOut[k] = char(voxValue[k] * 255);
-
+		phiOut[k] = char(voxValue[k] * 255);
 	}
 	rawFile.write((char*)phiOut, vSize*sizeof(char));
 	delete[] phiOut;
